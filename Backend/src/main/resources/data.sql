@@ -1,0 +1,58 @@
+-- Inserir produtos
+INSERT INTO produto (codigo, descricao, tipo_produto, valor_fornecedor, quantidade_estoque) VALUES
+('P001', 'Notebook Dell', 'ELETRONICO', 3500.00, 10),
+('P002', 'Geladeira Brastemp', 'ELETRODOMESTICO', 2400.00, 5),
+('P003', 'Mesa de Escritório', 'MOVEL', 800.00, 15),
+('P004', 'Smartphone Samsung', 'ELETRONICO', 1500.00, 20),
+('P005', 'Micro-ondas LG', 'ELETRODOMESTICO', 600.00, 8),
+('P006', 'Cadeira Escritório', 'MOVEL', 350.00, 12),
+('P007', 'Impressora HP', 'ELETRONICO', 700.00, 6),
+('P008', 'Ventilador Arno', 'ELETRODOMESTICO', 150.00, 10),
+('P009', 'Estante de Madeira', 'MOVEL', 900.00, 7),
+('P010', 'Monitor LG', 'ELETRONICO', 1100.00, 9),
+('P011', 'Fogão Electrolux', 'ELETRODOMESTICO', 1800.00, 4),
+('P012', 'Sofá 3 lugares', 'MOVEL', 1200.00, 3),
+('P013', 'Caixa de Som JBL', 'ELETRONICO', 400.00, 14),
+('P014', 'Liquidificador Philips', 'ELETRODOMESTICO', 220.00, 11),
+('P015', 'Mesa de Jantar', 'MOVEL', 1300.00, 2),
+('P016', 'Notebook Asus', 'ELETRONICO', 4000.00, 8),
+('P017', 'Geladeira Consul', 'ELETRODOMESTICO', 2600.00, 6),
+('P018', 'Poltrona Reclinável', 'MOVEL', 1500.00, 5),
+('P019', 'Tablet Samsung', 'ELETRONICO', 1200.00, 13),
+('P020', 'Torradeira Britânia', 'ELETRODOMESTICO', 180.00, 15),
+('P021', 'Armário de Cozinha', 'MOVEL', 1100.00, 7),
+('P022', 'Headphone Sony', 'ELETRONICO', 350.00, 16);
+
+-- Inserir movimentações de estoque (entradas com datas, algumas sem)
+INSERT INTO movimento_estoque (produto_id, tipo, valor_venda, data_venda, quantidade) VALUES
+((SELECT id FROM produto WHERE codigo = 'P001'), 'ENTRADA', NULL, '2025-06-01 08:00:00', 10),
+((SELECT id FROM produto WHERE codigo = 'P002'), 'ENTRADA', NULL, '2025-06-02 09:30:00', 5),
+((SELECT id FROM produto WHERE codigo = 'P003'), 'ENTRADA', NULL, '2025-06-03 10:15:00', 15),
+((SELECT id FROM produto WHERE codigo = 'P004'), 'ENTRADA', NULL, '2025-06-04 11:00:00', 20),
+((SELECT id FROM produto WHERE codigo = 'P005'), 'ENTRADA', NULL, NULL, 8),
+((SELECT id FROM produto WHERE codigo = 'P006'), 'ENTRADA', NULL, '2025-06-05 14:00:00', 12),
+((SELECT id FROM produto WHERE codigo = 'P007'), 'ENTRADA', NULL, '2025-06-06 15:30:00', 6),
+((SELECT id FROM produto WHERE codigo = 'P008'), 'ENTRADA', NULL, '2025-06-07 16:45:00', 10),
+((SELECT id FROM produto WHERE codigo = 'P009'), 'ENTRADA', NULL, NULL, 7),
+((SELECT id FROM produto WHERE codigo = 'P010'), 'ENTRADA', NULL, '2025-06-08 09:00:00', 9),
+
+((SELECT id FROM produto WHERE codigo = 'P011'), 'ENTRADA', NULL, '2025-06-09 10:30:00', 4),
+((SELECT id FROM produto WHERE codigo = 'P012'), 'ENTRADA', NULL, '2025-06-10 11:00:00', 3),
+((SELECT id FROM produto WHERE codigo = 'P013'), 'ENTRADA', NULL, '2025-06-11 12:15:00', 14),
+((SELECT id FROM produto WHERE codigo = 'P014'), 'ENTRADA', NULL, '2025-06-12 13:20:00', 11),
+((SELECT id FROM produto WHERE codigo = 'P015'), 'ENTRADA', NULL, NULL, 2),
+
+-- Saídas variadas com datas e valores de venda
+((SELECT id FROM produto WHERE codigo = 'P001'), 'SAIDA', 4000.00, '2025-06-16 00:00:00', 2),
+((SELECT id FROM produto WHERE codigo = 'P003'), 'SAIDA', 1000.00, '2025-06-15 00:00:00', 1),
+((SELECT id FROM produto WHERE codigo = 'P004'), 'SAIDA', 1600.00, '2025-06-14 00:00:00', 3),
+((SELECT id FROM produto WHERE codigo = 'P006'), 'SAIDA', 400.00, '2025-06-14 00:00:00', 2),
+((SELECT id FROM produto WHERE codigo = 'P009'), 'SAIDA', 700.00, '2025-06-13 00:00:00', 1),
+((SELECT id FROM produto WHERE codigo = 'P010'), 'SAIDA', 1100.00, '2025-06-13 00:00:00', 2),
+((SELECT id FROM produto WHERE codigo = 'P012'), 'SAIDA', 1200.00, '2025-06-12 00:00:00', 1),
+((SELECT id FROM produto WHERE codigo = 'P014'), 'SAIDA', 230.00, '2025-06-12 00:00:00', 3),
+((SELECT id FROM produto WHERE codigo = 'P017'), 'SAIDA', 2600.00, '2025-06-11 00:00:00', 1),
+((SELECT id FROM produto WHERE codigo = 'P019'), 'SAIDA', 1300.00, '2025-06-11 00:00:00', 4),
+((SELECT id FROM produto WHERE codigo = 'P020'), 'SAIDA', 200.00, '2025-06-10 00:00:00', 5),
+((SELECT id FROM produto WHERE codigo = 'P022'), 'SAIDA', 360.00, '2025-06-09 00:00:00', 2),
+((SELECT id FROM produto WHERE codigo = 'P021'), 'SAIDA', 1100.00, '2025-06-09 00:00:00', 1);
