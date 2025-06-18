@@ -7,22 +7,29 @@
       form(@submit.prevent="registrarMovimentacao")
         .form-row.centralizado
 
-          .flex-1.produto-com-detalhes
-            label Produto
-            select(v-model="movimento.produtoId", required)
-              option(value="" disabled selected) Selecione
-              option(v-for="produto in produtos" :value="produto.id") {{ produto.nome }}
+          .flex-1.categoria-com-detalhes
+            label(for="categoria") Categoria
+            select#categoria(v-model="categoriaFormulario" required)
+              option(value="" disabled selected) Selecione a categoria
+              option(v-for="cat in categorias" :key="cat" :value="cat") {{ cat }}
 
-            .produto-detalhes(v-if="produtoSelecionado")
-              small Código: {{ produtoSelecionado.codigo }}
+          .flex-1.produto-com-detalhes
+            label(for="produto") Produto
+            select(v-model.number="idProdutoDetalheSelecionado" @change="onSelecionarProduto")
+              option(value="") Selecione um produto
+              option(v-for="produto in produtosFormulario" :key="produto.id" :value="produto.id") {{ produto.nome }}
+
+
+            .produto-detalhes(v-if="produtoParaDetalhe")
+              small Código: {{ produtoParaDetalhe.codigo || '-' }}
               br
-              small Tipo: {{ produtoSelecionado.tipo }}
+              small Tipo: {{ produtoParaDetalhe.tipo || '-' }}
               br
-              small Estoque: {{ produtoSelecionado.quantidade }}
+              small Estoque: {{ produtoParaDetalhe.quantidade ?? '-' }}
               br
-              small Valor Fornecedor: {{ formatarReais(produtoSelecionado.valorFornecedor) }}
+              small Valor Fornecedor: {{ produtoParaDetalhe.valorFornecedor ? formatarReais(produtoParaDetalhe.valorFornecedor) : '-' }}
               br
-              small Venda: {{ formatarReais(produtoSelecionado.valorVenda) }}
+              small Venda: {{ produtoParaDetalhe.valorVenda ? formatarReais(produtoParaDetalhe.valorVenda) : '-' }}
 
 
           .flex-1.tipo-toggle-wrapper
@@ -56,7 +63,7 @@
 
         .form-row.centralizado
           button.btn-submit(type="submit") Registrar
-          button.btn-limpar(type="button" @click="limparFormulario") Limpar
+          button.btn-limpar(type="button" @click="limparSelects") Limpar
 
         p.alert(v-if="erro") {{ erro }}
         p.success(v-if="sucesso") {{ sucesso }}
@@ -170,9 +177,9 @@
   )
 
   ModalExtrato(
-  v-if="modalExtratoAberto"
-  :extrato="extratoProduto"
-  @close="modalExtratoAberto = false"
+    v-if="modalExtratoAberto"
+    :extrato="extratoProduto"
+    @close="modalExtratoAberto = false"
   )
 
 </template>
@@ -195,7 +202,6 @@ import type { ExtratoProduto } from '@/services/movimentacaoService'
 
 import { login } from '@/services/authService'
 import ModalExtrato from '@/views/components/ModalExtrato.vue'
-
 import ModalProduto from '@/views/components/ModalProdutoNovo.vue'
 import ModalEditarProduto from '@/views/components/ModalEditarProduto.vue'
 import ModalConfirmarRemocao from '@/views/components/ModalConfirmarRemocao.vue'
@@ -235,6 +241,11 @@ interface Movimentacao {
   dataVenda: string | null
   quantidade: number
 }
+
+const totalProdutos = ref(0)
+const paginaAtual = ref(0)
+const tamanhoPagina = ref(10)
+
 const modalExtratoAberto = ref(false)
 const extratoProduto = ref<ExtratoProduto | null>(null)
 const modalEditarAberto = ref(false)
@@ -254,7 +265,8 @@ const filtroProduto = reactive({
   tipoProduto: ''
 })
 const isLoading = ref(true)
-
+const categorias = ['ELETRONICO', 'ELETRODOMESTICO', 'MOVEL']
+const categoriaFormulario = ref('')
 const paginaProduto = ref(0)
 const totalPaginasProduto = ref(1)
 
@@ -264,32 +276,30 @@ const filtroMov = reactive({
   dataInicio: '',
   dataFim: ''
 })
+const produtoParaDetalhe = computed(() => {
+  return produtosFormulario.value.find((p) => p.id === idProdutoDetalheSelecionado.value) || null
+})
 
-const paginaMov = ref(0)
-const totalPaginasMov = ref(1)
+function onSelecionarProduto() {
+  const produto = produtosFormulario.value.find((p) => p.id === idProdutoDetalheSelecionado.value)
+}
 
 const movimentacoes = ref<Movimentacao[]>([])
 const erro = ref('')
 const sucesso = ref('')
 const saidasPorProduto = ref<Record<string, number>>({})
 
-onMounted(async () => {
-  isLoading.value = true
-  try {
-    const resultado = await listarResumoSaidas()
-    saidasPorProduto.value = resultado
-  } finally {
-    isLoading.value = false
-  }
-})
-
 const produtoSelecionado = ref<Produto | null>(null)
+const idProdutoDetalheSelecionado = ref<number | null>(null)
 
+const produtoCategoriaSelecionadoId = ref<string | null>(null)
+const produtosFormulario = ref<Produto[]>([])
 function formatarReais(valor: number | undefined): string {
   return valor == null
     ? '—'
     : new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(valor)
 }
+
 const abrirExtrato = async (produtoId: number) => {
   try {
     modalExtratoAberto.value = false // fecha antes, só por garantia
@@ -314,18 +324,27 @@ function limparFormulario() {
   produtoSelecionado.value = null
   erro.value = ''
   sucesso.value = ''
+  buscarProdutos()
+}
+function limparSelects() {
+  categoriaFormulario.value = ''
+  idProdutoDetalheSelecionado.value = null
+  produtoSelecionado.value = null
+  movimento.value.tipo = 'ENTRADA' // Reseta o toggle para Entrada
 }
 
 async function buscarProdutos(pagina = 0) {
   paginaProduto.value = pagina
+  isLoading.value = true
+  erro.value = ''
   try {
     const resposta = await listarProdutos({
-      codigo: filtroProduto.codigo,
-      descricao: filtroProduto.descricao,
-      tipoProduto: filtroProduto.tipoProduto,
+      codigo: filtroProduto.codigo || '',
+      descricao: filtroProduto.descricao || '',
+      tipoProduto: filtroProduto.tipoProduto || '', // usa o filtro do produto
       page: paginaProduto.value,
-      size: 10,
-      sort: 'descricao,asc' // ← AQUI
+      size: tamanhoPagina.value,
+      sort: 'descricao,asc'
     })
 
     produtos.value = resposta.content.map((p: any) => ({
@@ -338,10 +357,16 @@ async function buscarProdutos(pagina = 0) {
       saidas: 0
     }))
     totalPaginasProduto.value = resposta.totalPages
+    totalProdutos.value = resposta.totalElements
   } catch (e) {
     erro.value = 'Erro ao carregar produtos'
+    produtos.value = []
+  } finally {
+    isLoading.value = false
   }
 }
+const paginaMov = ref(0)
+const totalPaginasMov = ref(1)
 
 async function buscarMovimentacoes(pagina = 0) {
   paginaMov.value = pagina
@@ -360,6 +385,7 @@ async function buscarMovimentacoes(pagina = 0) {
     erro.value = 'Erro ao carregar movimentações'
   }
 }
+
 function limparFiltrosProduto() {
   filtroProduto.codigo = ''
   filtroProduto.descricao = ''
@@ -385,6 +411,27 @@ function limparFiltrosMovimentacoes() {
 
   buscarMovimentacoes(0)
 }
+watch(produtoCategoriaSelecionadoId, (novoId) => {
+  const encontrado = produtosFormulario.value.find((p) => p.id.toString() === novoId)
+  if (encontrado) {
+    produtoSelecionado.value = encontrado // agora o detalhes exibe esse produto
+  }
+})
+
+watch(
+  () => movimento.value.produtoId,
+  (novoProdutoId) => {
+    if (novoProdutoId == null) {
+      produtoSelecionado.value = null
+    } else {
+      let produto = produtosFormulario.value.find((p) => p.id === novoProdutoId)
+      if (!produto) {
+        produto = produtos.value.find((p) => p.id === novoProdutoId)
+      }
+      produtoSelecionado.value = produto || null
+    }
+  }
+)
 
 watch(
   () => [filtroProduto.codigo, filtroProduto.descricao, filtroProduto.tipoProduto],
@@ -397,16 +444,20 @@ watch(
 )
 
 onMounted(async () => {
+  isLoading.value = true
   erro.value = ''
   sucesso.value = ''
   try {
-    await login('admin', 'admin123') // simulação de login
+    const resultado = await listarResumoSaidas()
+    saidasPorProduto.value = resultado
+    await login('admin', 'admin123')
     await buscarProdutos()
     await buscarMovimentacoes()
   } catch (e: any) {
-    erro.value = e.response?.data?.message || 'Erro ao carregar produtos'
+    erro.value = e.response?.data?.message || 'Erro ao carregar dados'
+  } finally {
+    isLoading.value = false
   }
-  isLoading.value = false
 })
 
 function calcularLucro(mov: Movimentacao): string {
@@ -449,7 +500,8 @@ watch(
 async function registrarMovimentacao() {
   erro.value = ''
   sucesso.value = ''
-  const produto = produtos.value.find((p) => p.id === movimento.value.produtoId)
+  const produto = produtosFormulario.value.find((p) => p.id === idProdutoDetalheSelecionado.value)
+
   if (!produto) {
     erro.value = 'Produto não encontrado.'
     return
@@ -496,7 +548,6 @@ async function registrarMovimentacao() {
       movimento.value.tipo === 'SAIDA'
         ? 'Saída registrada com sucesso.'
         : 'Entrada registrada com sucesso.'
-    limparFormulario()
   } catch (e) {
     erro.value = 'Erro ao registrar movimentação na API.'
   }
@@ -516,7 +567,6 @@ function abrirAdicionarProduto() {
   produtoParaEditar.value = null
   modalAberto.value = true
 }
-
 async function salvarProduto(produto: Produto) {
   try {
     if (!produto.id || produto.id === 0) {
@@ -525,7 +575,7 @@ async function salvarProduto(produto: Produto) {
       await atualizarProduto(produto.id, produto)
     }
     modalAberto.value = false
-    await buscarProdutos()
+    await buscarProdutos() // Atualiza a lista de produtos após salvar
   } catch (error) {
     console.error('Erro ao salvar produto:', error)
   }
@@ -536,7 +586,7 @@ async function confirmarRemocao(id: number) {
     await deletarProduto(id)
     const index = produtos.value.findIndex((p) => p.id === id)
     if (index !== -1) {
-      produtos.value.splice(index, 1)
+      produtos.value.splice(index, 1) // Remove o produto da lista
       sucesso.value = 'Produto removido com sucesso.'
     }
   } catch (error) {
@@ -545,14 +595,65 @@ async function confirmarRemocao(id: number) {
 }
 
 function aumentarQuantidade() {
-  movimento.value.quantidade++
+  movimento.value.quantidade++ // Aumenta a quantidade do movimento
 }
 
 function diminuirQuantidade() {
   if (movimento.value.quantidade > 1) {
-    movimento.value.quantidade--
+    movimento.value.quantidade-- // Diminui a quantidade do movimento, garantindo que não fique menor que 1
   }
 }
+
+const categoriaSelecionada = ref('') // Ref para a categoria selecionada
+
+watch(
+  () => categoriaFormulario.value,
+  async (novaCategoria) => {
+    if (novaCategoria) {
+      await buscarProdutosPorCategoria()
+      movimento.value.produtoId = null
+    } else {
+      produtosFormulario.value = []
+      movimento.value.produtoId = null
+    }
+  }
+)
+
+async function buscarProdutosPorCategoria() {
+  isLoading.value = true
+  try {
+    const resposta = await listarProdutos({ tipoProduto: categoriaFormulario.value, size: 100 })
+    produtosFormulario.value = resposta.content.map((p: any) => ({
+      id: p.id,
+      codigo: p.codigo,
+      nome: p.descricao,
+      tipo: p.tipoProduto,
+      quantidade: p.quantidadeEstoque,
+      valorFornecedor: p.valorFornecedor,
+      valorVenda: p.valorVenda
+    }))
+  } catch (e) {
+    erro.value = 'Erro ao carregar produtos por categoria'
+    produtosFormulario.value = []
+  } finally {
+    isLoading.value = false
+  }
+}
+
+onMounted(async () => {
+  isLoading.value = true
+  erro.value = ''
+  sucesso.value = ''
+  try {
+    await login('admin', 'admin123') // Realiza o login
+    await listarProdutos() // Lista todos os produtos
+    await buscarMovimentacoes() // Busca as movimentações
+  } catch (e: any) {
+    erro.value = e.response?.data?.message || 'Erro ao carregar dados' // Captura e exibe erro
+  } finally {
+    isLoading.value = false
+  }
+})
 </script>
 <style scoped>
 * {

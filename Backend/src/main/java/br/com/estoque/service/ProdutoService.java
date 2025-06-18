@@ -4,6 +4,7 @@ import br.com.estoque.exception.NegocioException;
 import br.com.estoque.model.MovimentoEstoque;
 import br.com.estoque.model.Produto;
 import br.com.estoque.model.enums.TipoMovimentacao;
+import br.com.estoque.model.enums.TipoProduto;
 import br.com.estoque.model.specification.ProdutoSpecification;
 import br.com.estoque.repository.MovimentoEstoqueRepository;
 import br.com.estoque.repository.ProdutoRepository;
@@ -32,9 +33,10 @@ public class ProdutoService {
         return produtoRepo.save(produto);
     }
 
-    public List<Produto> listar() {
-        return produtoRepo.findAll();
+    public Page<Produto> listarTodosPaginado(Pageable pageable) {
+        return produtoRepo.findAll(pageable);
     }
+
 
     public Page<Produto> buscarFiltrado(String codigo, String descricao, String tipoProduto, Pageable pageable) {
         Specification<Produto> spec = ProdutoSpecification.filtrar(codigo, descricao, tipoProduto);
@@ -101,5 +103,14 @@ public class ProdutoService {
 
         return String.format("P%03d", novoNumero);
     }
+
+    public List<Produto> buscarPorTipo(TipoProduto tipo) {
+        return produtoRepo.findByTipoProduto(tipo);
+    }
+
+    public List<Produto> listarTodos() {
+        return produtoRepo.findAll();
+    }
+
 
 }

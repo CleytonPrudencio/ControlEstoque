@@ -23,3 +23,15 @@ export async function listarProdutos(params: Record<string, any> = {}) {
   const response = await api.get('/produtos', { params })
   return response.data
 }
+
+export async function listarProdutosPorCategoria(categoria: string) {
+  const response = await api.get(`/produtos/por-categoria/${categoria}`)
+  return response.data
+}
+
+// Recebe página e tamanho, por exemplo: page=0, size=10
+export async function listarAll(page = 0, size = 10) {
+  const res = await fetch(`/produtos/all?page=${page}&size=${size}`)
+  if (!res.ok) throw new Error('Erro ao buscar todos os produtos')
+  return await res.json() // retorna objeto paginado
+}

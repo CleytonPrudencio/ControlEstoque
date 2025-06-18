@@ -63,4 +63,10 @@ public class GlobalExceptionHandler {
         );
         return new ResponseEntity<>(error, HttpStatus.INTERNAL_SERVER_ERROR);
     }
+
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<String> handleInvalidEnum(Exception ex) {
+        return ResponseEntity.badRequest().body("Categoria inválida. Use: ELETRONICO, ELETRODOMESTICO, MOVEL.");
+    }
+
 }
