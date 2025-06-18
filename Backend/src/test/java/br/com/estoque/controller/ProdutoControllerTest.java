@@ -11,12 +11,16 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.Import;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.math.BigDecimal;
 import java.util.List;
 
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -44,7 +48,7 @@ class ProdutoControllerTest {
                 .quantidadeEstoque(100)
                 .build();
 
-        when(produtoService.salvar(Mockito.any(Produto.class))).thenReturn(produto);
+        when(produtoService.salvar(any(Produto.class))).thenReturn(produto);
 
         mockMvc.perform(post("/produtos")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -56,7 +60,7 @@ class ProdutoControllerTest {
     }
 
     @Test
-    void listar_deveRetornarListaProdutos() throws Exception {
+    void listar_deveRetornarPaginaDeProdutos() throws Exception {
         Produto produto = Produto.builder()
                 .id(1L)
                 .codigo("001")
@@ -65,14 +69,21 @@ class ProdutoControllerTest {
                 .valorFornecedor(new BigDecimal("10.00"))
                 .quantidadeEstoque(100)
                 .build();
+
         List<Produto> lista = List.of(produto);
+        Page<Produto> pagina = new PageImpl<>(lista);
 
-        when(produtoService.listar()).thenReturn(lista);
+        when(produtoService.buscarFiltrado(
+                any(), any(), any(), any(Pageable.class))
+        ).thenReturn(pagina);
 
-        mockMvc.perform(get("/produtos"))
+        mockMvc.perform(get("/produtos")
+                        .param("page", "0")
+                        .param("size", "10"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].descricao").value("Produto Teste"));
+                .andExpect(jsonPath("$.content[0].descricao").value("Produto Teste"));
     }
+
 
     @Test
     void buscar_deveRetornarProduto() throws Exception {

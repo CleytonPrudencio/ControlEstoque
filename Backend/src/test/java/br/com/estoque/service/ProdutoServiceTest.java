@@ -1,7 +1,9 @@
 package br.com.estoque.service;
 
 import br.com.estoque.exception.NegocioException;
+import br.com.estoque.model.MovimentoEstoque;
 import br.com.estoque.model.Produto;
+import br.com.estoque.model.enums.TipoMovimentacao;
 import br.com.estoque.model.enums.TipoProduto;
 import br.com.estoque.repository.MovimentoEstoqueRepository;
 import br.com.estoque.repository.ProdutoRepository;
@@ -95,16 +97,32 @@ class ProdutoServiceTest {
     }
 
     @Test
-    void deletar_deveExcluirProdutoEMovimentos() {
-        when(produtoRepo.existsById(1L)).thenReturn(true);
-        doNothing().when(movimentoRepo).deleteByProdutoId(1L);
-        doNothing().when(produtoRepo).deleteById(1L);
+    void deletar_deveInativarProdutoERegistrarMovimentacao() {
+        Produto produto = new Produto();
+        produto.setId(1L);
+        produto.setAtivo(true);
+        produto.setQuantidadeEstoque(10);
+
+        when(produtoRepo.findById(1L)).thenReturn(Optional.of(produto));
+        when(produtoRepo.save(any(Produto.class))).thenReturn(produto);
+        when(movimentoRepo.save(any(MovimentoEstoque.class))).thenReturn(new MovimentoEstoque());
 
         produtoService.deletar(1L);
 
-        verify(movimentoRepo).deleteByProdutoId(1L);
-        verify(produtoRepo).deleteById(1L);
+        // Verifica se o produto foi inativado
+        assert !produto.isAtivo();
+
+        // Verifica se o produto foi salvo com o novo estado (inativo)
+        verify(produtoRepo).save(produto);
+
+        // Verifica se a movimentação de EXCLUSAO foi registrada
+        verify(movimentoRepo).save(argThat(m ->
+                m.getProduto().equals(produto) &&
+                        m.getTipo() == TipoMovimentacao.EXCLUSAO &&
+                        m.getQuantidade().equals(produto.getQuantidadeEstoque())
+        ));
     }
+
 
     @Test
     void deletar_quandoNaoExiste_deveLancarExcecao() {
