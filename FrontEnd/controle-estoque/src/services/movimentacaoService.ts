@@ -53,3 +53,7 @@ export const listarResumoSaidas = async (): Promise<Record<number, number>> => {
   const response = await api.get('/movimentos/saidas')
   return response.data
 }
+export async function buscarMovimentacao(id: number) {
+  const response = await api.get(`/movimentos/extrato/movimentacao/${id}`)
+  return response.data
+}

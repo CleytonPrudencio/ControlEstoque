@@ -13,7 +13,7 @@ import java.util.Optional;
 public interface ProdutoRepository extends JpaRepository<Produto, Long>, JpaSpecificationExecutor<Produto> {
     Optional<Produto> findByCodigo(String codigo);
 
-    List<Produto> findByTipoProduto(TipoProduto tipo);
+    List<Produto> findByCategoriaNomeAndAtivoTrue(String nomeCategoria);
 
     Produto findTopByOrderByCodigoDesc();
 

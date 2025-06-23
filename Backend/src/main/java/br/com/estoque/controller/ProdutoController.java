@@ -46,10 +46,10 @@ public class ProdutoController {
     public Page<Produto> listarProdutos(
             @RequestParam(required = false) String codigo,
             @RequestParam(required = false) String descricao,
-            @RequestParam(required = false) String tipoProduto,
+            @RequestParam(required = false) String categoria,
             Pageable pageable
     ) {
-        return produtoService.buscarFiltrado(codigo, descricao, tipoProduto, pageable);
+        return produtoService.buscarFiltrado(codigo, descricao, categoria, pageable);
     }
 
     @Operation(summary = "Listar produtos por categoria", description = "Lista produtos filtrando por categoria (ELETRONICO, ELETRODOMESTICO, MOVEL)")
@@ -58,10 +58,12 @@ public class ProdutoController {
             @ApiResponse(responseCode = "400", description = "Categoria inválida"),
             @ApiResponse(responseCode = "500", description = "Erro interno do servidor")
     })
-    @GetMapping("/por-categoria/{tipo}")
-    public ResponseEntity<List<Produto>> listarPorCategoria(@PathVariable TipoProduto tipo) {
-        return ResponseEntity.ok(produtoService.buscarPorTipo(tipo));
+    @GetMapping("/por-categoria/{nomeCategoria}")
+    public ResponseEntity<List<Produto>> listarPorCategoria(@PathVariable String nomeCategoria) {
+        List<Produto> produtos = produtoService.buscarPorCategoria(nomeCategoria);
+        return ResponseEntity.ok(produtos);
     }
+
 
     @Operation(summary = "Buscar produto por ID", description = "Recupera os detalhes de um produto específico pelo ID")
     @ApiResponses(value = {

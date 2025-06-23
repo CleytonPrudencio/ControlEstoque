@@ -1,6 +1,7 @@
 package br.com.estoque.service;
 
 import br.com.estoque.exception.NegocioException;
+import br.com.estoque.model.Categoria;
 import br.com.estoque.model.MovimentoEstoque;
 import br.com.estoque.model.Produto;
 import br.com.estoque.model.enums.TipoMovimentacao;
@@ -37,21 +38,35 @@ class MovimentoEstoqueServiceTest {
     void setUp() {
         MockitoAnnotations.openMocks(this);
 
+        Categoria categoria = new Categoria();
+        categoria.setId(1L);
+        categoria.setNome("ELETRONICO");
+
         produto = Produto.builder()
                 .id(1L)
                 .codigo("001")
                 .descricao("Produto Teste")
-                .tipoProduto(TipoProduto.ELETRONICO)
+                .categoria(categoria)
                 .valorFornecedor(new BigDecimal("10.00"))
                 .quantidadeEstoque(100)
+                .ativo(true)
                 .build();
 
-        entrada = new MovimentoEstoque(null, produto, TipoMovimentacao.ENTRADA,
-                new BigDecimal("15.00"), LocalDateTime.now(), 50);
+        entrada = new MovimentoEstoque();
+        entrada.setProduto(produto);
+        entrada.setTipo(TipoMovimentacao.ENTRADA);
+        entrada.setValorVenda(new BigDecimal("15.00"));
+        entrada.setDataVenda(LocalDateTime.now());
+        entrada.setQuantidade(50);
 
-        saida = new MovimentoEstoque(null, produto, TipoMovimentacao.SAIDA,
-                new BigDecimal("15.00"), LocalDateTime.now(), 30);
+        saida = new MovimentoEstoque();
+        saida.setProduto(produto);
+        saida.setTipo(TipoMovimentacao.SAIDA);
+        saida.setValorVenda(new BigDecimal("15.00"));
+        saida.setDataVenda(LocalDateTime.now());
+        saida.setQuantidade(30);
     }
+
 
     @Test
     void registrarMovimento_entrada_deveSomarAoEstoque() {
@@ -91,12 +106,17 @@ class MovimentoEstoqueServiceTest {
 
     @Test
     void registrarMovimento_tipoInvalido_deveLancarExcecao() {
-        MovimentoEstoque mov = new MovimentoEstoque(null, produto, null,
-                new BigDecimal("15.00"), LocalDateTime.now(), 10);
+        MovimentoEstoque mov = new MovimentoEstoque();
+        mov.setProduto(produto);
+        mov.setTipo(null); // Tipo inválido
+        mov.setValorVenda(new BigDecimal("15.00"));
+        mov.setDataVenda(LocalDateTime.now());
+        mov.setQuantidade(10);
 
         when(produtoRepo.findById(1L)).thenReturn(Optional.of(produto));
 
         NegocioException e = assertThrows(NegocioException.class, () -> movimentoService.registrarMovimento(mov));
         assertEquals("Tipo de movimentação inválido", e.getMessage());
     }
+
 }

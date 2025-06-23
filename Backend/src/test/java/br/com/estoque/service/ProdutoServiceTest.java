@@ -1,6 +1,7 @@
 package br.com.estoque.service;
 
 import br.com.estoque.exception.NegocioException;
+import br.com.estoque.model.Categoria;
 import br.com.estoque.model.MovimentoEstoque;
 import br.com.estoque.model.Produto;
 import br.com.estoque.model.enums.TipoMovimentacao;
@@ -33,11 +34,16 @@ class ProdutoServiceTest {
     @BeforeEach
     void setUp() {
         MockitoAnnotations.openMocks(this);
+
+        Categoria categoria = new Categoria();
+        categoria.setId(1L);
+        categoria.setNome("ELETRONICO");
+
         produto = Produto.builder()
                 .id(1L)
                 .codigo("001")
                 .descricao("Produto Teste")
-                .tipoProduto(TipoProduto.ELETRONICO)
+                .categoria(categoria)
                 .valorFornecedor(new BigDecimal("10.00"))
                 .quantidadeEstoque(100)
                 .ativo(true)
@@ -85,10 +91,14 @@ class ProdutoServiceTest {
 
     @Test
     void atualizar_deveAtualizarProduto() {
+
+        Categoria categoria = new Categoria();
+        categoria.setId(1L);
+        categoria.setNome("ELETRONICO");
         Produto atualizado = Produto.builder()
                 .codigo("002")
                 .descricao("Novo nome")
-                .tipoProduto(TipoProduto.ELETRONICO)
+                .categoria(categoria)
                 .valorFornecedor(new BigDecimal("20.00"))
                 .quantidadeEstoque(200)
                 .ativo(true)

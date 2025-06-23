@@ -8,13 +8,15 @@
         form(@submit.prevent="salvar")
           label Nome
           input(type="text" v-model="produtoEditado.descricao" required)
+          
           label Código
-          input(type="text" v-model="produtoEditado.codigo" required)
-          label Tipo
-          select(v-model="produtoEditado.tipoProduto" required)
-            option(value="ELETRONICO") Eletrônico
-            option(value="ELETRODOMESTICO") Eletrodoméstico
-            option(value="MOVEL") Movel
+          input(type="text" v-model="produtoEditado.codigo" readonly required)
+
+          label Categoria
+          select(v-model="produtoEditado.categoria" required)
+            option(value="" disabled selected) Selecione uma categoria
+            option(v-for="cat in categorias" :key="cat.id" :value="cat") {{ cat.nome }}
+
           label Valor Fornecedor (R$)
           input(
             type="text"
@@ -22,21 +24,24 @@
             @input="aoDigitarValorFornecedor"
             required
           )
+
           label Quantidade
           input(type="number" v-model.number="produtoEditado.quantidadeEstoque" min="0" required)
+
           footer.modal-footer
             button.btn-cancel(type="button" @click="fechar") Cancelar
             button.btn-save(type="submit") Salvar
 </template>
 
 <script setup lang="ts">
-import { defineEmits, defineProps, reactive, ref, watch, onMounted, nextTick } from 'vue'
-type TipoProduto = 'ELETRONICO' | 'ELETRODOMESTICO' | 'MOVEL'
+import { defineEmits, defineProps, reactive, ref, watch, onMounted } from 'vue'
+import type { Categoria } from '@/services/categoriaService'
 
 interface Produto {
+  id?: number
   codigo: string
   descricao: string
-  tipoProduto: TipoProduto
+  categoria: Categoria
   quantidadeEstoque: number
   valorFornecedor: number
 }
@@ -45,13 +50,14 @@ interface ProdutoRaw {
   id: number
   codigo: string
   nome: string
-  tipo: string
+  categoria: Categoria
   quantidade: number
   valorFornecedor: number
 }
 
 const props = defineProps<{
   produto: ProdutoRaw | null
+  categorias: Categoria[]
 }>()
 
 const emit = defineEmits<{
@@ -60,9 +66,10 @@ const emit = defineEmits<{
 }>()
 
 const produtoEditado = reactive<Produto>({
+  id: undefined,
   codigo: '',
   descricao: '',
-  tipoProduto: 'ELETRONICO',
+  categoria: props.categorias[0] || { id: 0, nome: '' },
   quantidadeEstoque: 0,
   valorFornecedor: 0
 })
@@ -71,40 +78,27 @@ const valorFornecedorFormatado = ref('')
 
 onMounted(() => {
   if (props.produto) {
-    Object.assign(produtoEditado, props.produto)
-    atualizarFormatacoes()
+    preencherProdutoEditado(props.produto)
   }
-
-  nextTick(() => {
-    const inputs = document.querySelectorAll('input')
-    inputs.forEach((input) => {
-      if (input.value === produtoEditado.codigo) {
-        input.readOnly = true
-      }
-    })
-  })
 })
 
 watch(
   () => props.produto,
   (novo) => {
-    if (novo) {
-      produtoEditado.codigo = novo.codigo || ''
-      produtoEditado.descricao = novo.nome || ''
-      const tiposValidos: TipoProduto[] = ['ELETRONICO', 'ELETRODOMESTICO', 'MOVEL']
-
-      if (tiposValidos.includes(novo.tipo as TipoProduto)) {
-        produtoEditado.tipoProduto = novo.tipo as TipoProduto
-      } else {
-        produtoEditado.tipoProduto = 'ELETRONICO' // valor padrão ou trate o erro
-      }
-      produtoEditado.quantidadeEstoque = novo.quantidade || 0
-      produtoEditado.valorFornecedor = novo.valorFornecedor || 0
-      atualizarFormatacoes()
-    }
+    if (novo) preencherProdutoEditado(novo)
   },
   { immediate: true }
 )
+
+function preencherProdutoEditado(produto: ProdutoRaw) {
+  produtoEditado.id = produto.id
+  produtoEditado.codigo = produto.codigo || ''
+  produtoEditado.descricao = produto.nome || ''
+  produtoEditado.categoria = produto.categoria || props.categorias[0] || { id: 0, nome: '' }
+  produtoEditado.quantidadeEstoque = produto.quantidade || 0
+  produtoEditado.valorFornecedor = produto.valorFornecedor || 0
+  atualizarFormatacoes()
+}
 
 function salvar() {
   emit('salvar', { ...produtoEditado })

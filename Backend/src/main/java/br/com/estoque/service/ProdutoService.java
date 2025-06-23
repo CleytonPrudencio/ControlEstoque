@@ -16,7 +16,9 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Objects;
 
 @Service
 public class ProdutoService {
@@ -30,16 +32,29 @@ public class ProdutoService {
     }
 
     public Produto salvar(Produto produto) {
-        return produtoRepo.save(produto);
+        produto.setDescricao(capitalizarDescricao(produto.getDescricao()));
+        Produto produtoSalvo = produtoRepo.save(produto);
+
+        MovimentoEstoque movimentoEstoque = new MovimentoEstoque();
+        movimentoEstoque.setProduto(produtoSalvo);
+        movimentoEstoque.setTipo(TipoMovimentacao.CRIADO);
+        movimentoEstoque.setQuantidade(produtoSalvo.getQuantidadeEstoque());
+        movimentoEstoque.setDataVenda(LocalDateTime.now());
+        movimentoEstoque.setDescricao("Criação de novo produto.");
+
+        movimentoRepo.save(movimentoEstoque);
+
+        return produtoSalvo;
     }
+
 
     public Page<Produto> listarTodosPaginado(Pageable pageable) {
         return produtoRepo.findAll(pageable);
     }
 
 
-    public Page<Produto> buscarFiltrado(String codigo, String descricao, String tipoProduto, Pageable pageable) {
-        Specification<Produto> spec = ProdutoSpecification.filtrar(codigo, descricao, tipoProduto);
+    public Page<Produto> buscarFiltrado(String codigo, String descricao, String categoria, Pageable pageable) {
+        Specification<Produto> spec = ProdutoSpecification.filtrar(codigo, descricao, categoria);
         return produtoRepo.findAll(spec, pageable);
     }
 
@@ -52,14 +67,56 @@ public class ProdutoService {
     public Produto atualizar(Long id, Produto produtoAtualizado) {
         Produto produtoExistente = buscarPorId(id);
 
+        StringBuilder descricao = new StringBuilder("Atualização em " + LocalDateTime.now().format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss")) + ": ");
+
+        if (!Objects.equals(produtoExistente.getCodigo(), produtoAtualizado.getCodigo())) {
+            descricao.append("Código alterado de ")
+                    .append(produtoExistente.getCodigo()).append(" para ")
+                    .append(produtoAtualizado.getCodigo()).append(". ");
+        }
+
+        if (!Objects.equals(produtoExistente.getDescricao(), produtoAtualizado.getDescricao())) {
+            descricao.append("Descrição alterada de ")
+                    .append(produtoExistente.getDescricao()).append(" para ")
+                    .append(produtoAtualizado.getDescricao()).append(". ");
+        }
+
+        if (!Objects.equals(produtoExistente.getCategoria(), produtoAtualizado.getCategoria())) {
+            descricao.append("Categoria alterada de ")
+                    .append(produtoExistente.getCategoria().getNome()).append(" para ")
+                    .append(produtoAtualizado.getCategoria().getNome()).append(". ");
+        }
+
+        if (produtoExistente.getValorFornecedor() != null && !produtoExistente.getValorFornecedor().equals(produtoAtualizado.getValorFornecedor())) {
+            descricao.append("Valor do fornecedor alterado de R$ ")
+                    .append(produtoExistente.getValorFornecedor()).append(" para R$ ")
+                    .append(produtoAtualizado.getValorFornecedor()).append(". ");
+        }
+
+        if (produtoExistente.getQuantidadeEstoque() != produtoAtualizado.getQuantidadeEstoque()) {
+            descricao.append("Quantidade em estoque alterada de ")
+                    .append(produtoExistente.getQuantidadeEstoque()).append(" para ")
+                    .append(produtoAtualizado.getQuantidadeEstoque()).append(". ");
+        }
+
         produtoExistente.setCodigo(produtoAtualizado.getCodigo());
         produtoExistente.setDescricao(produtoAtualizado.getDescricao());
-        produtoExistente.setTipoProduto(produtoAtualizado.getTipoProduto());
+        produtoExistente.setCategoria(produtoAtualizado.getCategoria());
         produtoExistente.setValorFornecedor(produtoAtualizado.getValorFornecedor());
         produtoExistente.setQuantidadeEstoque(produtoAtualizado.getQuantidadeEstoque());
 
+        MovimentoEstoque movimentacaoExclusao = new MovimentoEstoque();
+        movimentacaoExclusao.setProduto(produtoExistente);
+        movimentacaoExclusao.setTipo(TipoMovimentacao.EDITADO);
+        movimentacaoExclusao.setQuantidade(produtoAtualizado.getQuantidadeEstoque());
+        movimentacaoExclusao.setDataVenda(LocalDateTime.now());
+        movimentacaoExclusao.setDescricao(descricao.toString().trim());
+
+        movimentoRepo.save(movimentacaoExclusao);
+
         return produtoRepo.save(produtoExistente);
     }
+
 
     @Transactional
     public void deletar(Long id) {
@@ -104,12 +161,33 @@ public class ProdutoService {
         return String.format("P%03d", novoNumero);
     }
 
-    public List<Produto> buscarPorTipo(TipoProduto tipo) {
-        return produtoRepo.findByTipoProduto(tipo);
+    public List<Produto> buscarPorCategoria(String nomeCategoria) {
+        return produtoRepo.findByCategoriaNomeAndAtivoTrue(nomeCategoria);
     }
+
 
     public List<Produto> listarTodos() {
         return produtoRepo.findAll();
+    }
+    public String capitalizarDescricao(String descricao) {
+        if (descricao == null || descricao.isBlank()) {
+            return descricao;
+        }
+
+        String[] palavras = descricao.trim().toLowerCase().split("\\s+");
+        StringBuilder resultado = new StringBuilder();
+
+        for (String palavra : palavras) {
+            if (palavra.length() > 0) {
+                resultado.append(Character.toUpperCase(palavra.charAt(0)));
+                if (palavra.length() > 1) {
+                    resultado.append(palavra.substring(1));
+                }
+                resultado.append(" ");
+            }
+        }
+
+        return resultado.toString().trim();
     }
 
 

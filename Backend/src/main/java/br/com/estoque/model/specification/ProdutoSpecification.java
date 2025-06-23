@@ -7,7 +7,7 @@ import org.springframework.data.jpa.domain.Specification;
 
 public class ProdutoSpecification {
 
-    public static Specification<Produto> filtrar(String codigo, String descricao, String tipoProduto) {
+    public static Specification<Produto> filtrar(String codigo, String descricao, String categoria) {
         return (root, query, cb) -> {
             Predicate predicadoAtivo = cb.isTrue(root.get("ativo"));
 
@@ -19,9 +19,9 @@ public class ProdutoSpecification {
                     ? cb.conjunction()
                     : cb.like(cb.lower(root.get("descricao")), "%" + descricao.toLowerCase() + "%");
 
-            Predicate predicadoTipo = tipoProduto == null || tipoProduto.isEmpty()
+            Predicate predicadoTipo = (categoria == null || categoria.isEmpty())
                     ? cb.conjunction()
-                    : cb.equal(root.get("tipoProduto"), TipoProduto.valueOf(tipoProduto.toUpperCase()));
+                    : cb.equal(cb.upper(root.get("categoria").get("nome")), categoria.toUpperCase());
 
             return cb.and(predicadoAtivo, predicadoCodigo, predicadoDescricao, predicadoTipo);
         };

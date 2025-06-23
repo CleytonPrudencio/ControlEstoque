@@ -37,10 +37,11 @@ public class MovimentoEstoqueService {
                 throw new NegocioException("Quantidade insuficiente em estoque");
             }
             produto.setQuantidadeEstoque(produto.getQuantidadeEstoque() - movimento.getQuantidade());
+            movimento.setDescricao("Venda de produto no valor de " + movimento.getValorVenda());
 
         } else if (movimento.getTipo() == TipoMovimentacao.ENTRADA) {
             produto.setQuantidadeEstoque(produto.getQuantidadeEstoque() + movimento.getQuantidade());
-
+            movimento.setDescricao("Entrada de produto pelo forncedor no valor de " + movimento.getProduto().getValorFornecedor());
         } else {
             throw new NegocioException("Tipo de movimentação inválido");
         }
@@ -124,12 +125,15 @@ public class MovimentoEstoqueService {
         extrato.setDescricao(produto.getDescricao());
         extrato.setQuantidadeTotalEntrada(entrada);
         extrato.setQuantidadeTotalSaida(saida);
-        extrato.setSaldoAtual(entrada - saida);
+        extrato.setSaldoAtual(produto.getQuantidadeEstoque());
         extrato.setLucroTotal(lucroTotal);
         extrato.setMovimentos(listaMovimentos);
 
         return extrato;
     }
-
+    public MovimentoEstoque gerarExtratoCompletoMovimentacao(Long produtoId) {
+        MovimentoEstoque movimentoEstoque = movimentoRepo.findById(produtoId).orElseThrow(() -> new NegocioException("Movimentacao não encontrada"));
+        return movimentoEstoque;
+    }
 
 }

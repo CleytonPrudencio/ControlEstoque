@@ -88,4 +88,19 @@ public class MovimentoEstoqueController {
         ExtratoProdutoCompleto extrato = movimentoService.gerarExtratoCompleto(produtoId);
         return ResponseEntity.ok(extrato);
     }
+
+    @Operation(
+            summary = "Buscar movimentação específica",
+            description = "Retorna os detalhes de uma movimentação de estoque pelo ID"
+    )
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Movimentação encontrada com sucesso"),
+            @ApiResponse(responseCode = "404", description = "Movimentação não encontrada"),
+            @ApiResponse(responseCode = "500", description = "Erro interno do servidor")
+    })
+    @GetMapping("/extrato/movimentacao/{movimentacaoId}")
+    public ResponseEntity<MovimentoEstoque> getExtratoMovimentacao(@PathVariable Long movimentacaoId) {
+        MovimentoEstoque extrato = movimentoService.gerarExtratoCompletoMovimentacao(movimentacaoId);
+        return ResponseEntity.ok(extrato);
+    }
 }

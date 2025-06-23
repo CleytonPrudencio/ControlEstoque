@@ -31,5 +31,9 @@ public class MovimentoEstoque {
     private LocalDateTime dataVenda;
 
     private Integer quantidade;
+
+    @Column(length = 1000)
+    private String descricao;
+
 }
 

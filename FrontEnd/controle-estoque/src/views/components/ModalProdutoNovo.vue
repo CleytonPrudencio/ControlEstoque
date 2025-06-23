@@ -15,11 +15,13 @@
             :disabled="isNovoProduto"
             required
           )
-          label Tipo
-          select(v-model="produtoEditado.tipo" required)
-            option(value="ELETRONICO") Eletrônico
-            option(value="ELETRODOMESTICO") Eletrodoméstico
-            option(value="MOVEL") Móvel
+          label Categoria
+          select(v-model="produtoEditado.categoria" required)
+            option(value="" disabled selected) Selecione uma categoria
+            option(v-for="cat in categorias" :key="cat.id" :value="cat") {{ cat.nome }}
+
+          small.link-adicionar-categoria(@click="abrirModalNovaCategoria") + Adicionar nova categoria
+
           label Valor Fornecedor (R$)
           input(
             type="text"
@@ -34,17 +36,38 @@
           footer.modal-footer
             button.btn-cancel(type="button" @click="fechar") Cancelar
             button.btn-save(type="submit") Salvar
+
+
+
+  ModalNovaCategoria(
+    v-if="modalNovaCategoriaAberto"
+    @close="fecharModalNovaCategoria"
+    @categoriaCriada="categoriaCriada"
+  )
   </template>
 
 <script setup lang="ts">
 import { defineEmits, defineProps, reactive, ref, watch, onMounted, computed } from 'vue'
 import { pegarNovoCodigo } from '@/services/produtoService'
+import type { Categoria } from '@/services/categoriaService'
+import ModalNovaCategoria from '@/views/components/ModalNovoCategoria.vue'
+import { useToast } from 'vue-toastification'
+const toast = useToast()
+
 interface Produto {
   codigo: string
   descricao: string
-  tipoProduto: TipoProduto
+  categoria: Categoria // <- aqui, e não tipoProduto
   quantidadeEstoque: number
   valorFornecedor: number
+}
+const modalNovaCategoriaAberto = ref(false)
+
+function abrirModalNovaCategoria() {
+  modalNovaCategoriaAberto.value = true
+}
+function fecharModalNovaCategoria() {
+  modalNovaCategoriaAberto.value = false
 }
 const isNovoProduto = ref(false)
 
@@ -55,16 +78,17 @@ const emit = defineEmits<{
 
 const props = defineProps<{
   produto: Produto | null
+  categorias: Categoria[]
 }>()
-type TipoProduto = 'ELETRONICO' | 'ELETRODOMESTICO' | 'MOVEL'
 
 const produtoEditado = reactive<Produto>({
   codigo: '',
   descricao: '',
-  tipoProduto: 'ELETRONICO',
+  categoria: props.categorias[0] || { id: 0, nome: '' }, // seleciona a primeira ou um default
   quantidadeEstoque: 0,
   valorFornecedor: 0
 })
+
 const valorDigitado = ref('')
 
 onMounted(() => {
@@ -153,6 +177,22 @@ function aoDigitarValorFornecedor(event: Event) {
 
 function fechar() {
   emit('close')
+}
+function categoriaCriada(nome: string) {
+  const jaExiste = props.categorias.some((cat) => cat.nome.toLowerCase() === nome.toLowerCase())
+  if (jaExiste) {
+    toast.warning('Categoria já existe.')
+    return
+  }
+
+  const novaCategoria = {
+    id: Date.now(), // ou ID retornado da API
+    nome
+  }
+
+  props.categorias.push(novaCategoria)
+  produtoEditado.categoria = novaCategoria
+  toast.success('Categoria criada com sucesso!')
 }
 
 function salvar() {
@@ -291,5 +331,18 @@ input[v-model='produtoEditado.valorVenda'] {
 
 .btn-save:hover {
   background-color: #369b70;
+}
+
+.link-adicionar-categoria {
+  display: inline-block;
+  margin-top: 4px;
+  color: #28a745;
+  cursor: pointer;
+  font-size: 0.9rem;
+  text-decoration: underline;
+}
+.link-adicionar-categoria:hover {
+  text-decoration: none;
+  color: #218838;
 }
 </style>

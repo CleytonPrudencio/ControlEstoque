@@ -1,42 +1,26 @@
 <template lang="pug">
-  .modal-backdrop(@click.self="fechar")
-    .modal-container(role="dialog" aria-modal="true" tabindex="-1" ref="modal")
-      header.modal-header
-        h3.modal-title Remover Produto
-        button.btn-close(@click="fechar" aria-label="Fechar modal") &times;
-      section.modal-body
-        p.text-confirm Você tem certeza que deseja remover o seguinte produto?
-        .produto-info
-          p
-            span.label Nome:
-            span.valor {{ produto?.nome }}
-          p
-            span.label Código:
-            span.valor {{ produto?.codigo }}
-          p
-            span.label Tipo:
-            span.valor {{ produto?.tipo }}
-          p
-            span.label Valor de Compra do Fornecedor:
-            span.valor-dinheiro {{ formatarMoeda(produto?.valorFornecedor) }}
-          p
-            span.label Quantidade:
-            span.valor {{ produto?.quantidade }}
-      footer.modal-footer
-        button.btn-cancel(@click="fechar") Cancelar
-        button.btn-remove(@click="confirmarRemocao") Remover
-  </template>
+.modal-backdrop(@click.self="fechar")
+  .modal-container(role="dialog" aria-modal="true" tabindex="-1" ref="modal")
+    header.modal-header
+      h3.modal-title Remover Categoria
+      button.btn-close(@click="fechar" aria-label="Fechar modal") &times;
+    section.modal-body
+      p.text-confirm Você tem certeza que deseja remover a categoria abaixo?
+      .categoria-info
+        p
+          span.label Nome:
+          span.valor-destaque {{ categoria?.nome }}
+    footer.modal-footer
+      button.btn-cancel(@click="fechar") Cancelar
+      button.btn-remove(@click="confirmarRemocao") Remover
+</template>
 
 <script setup lang="ts">
 import { defineEmits, defineProps } from 'vue'
 
-interface Produto {
+interface Categoria {
   id: number
   nome: string
-  codigo: string
-  tipo: string
-  valorFornecedor: number
-  quantidade: number
 }
 
 const emit = defineEmits<{
@@ -45,29 +29,20 @@ const emit = defineEmits<{
 }>()
 
 const props = defineProps<{
-  produto: Produto | null
+  categoria: Categoria | null
 }>()
+
+console.log('Categoria recebida:', props.categoria)
 
 function fechar() {
   emit('close')
 }
 
 function confirmarRemocao() {
-  if (props.produto) {
-    emit('confirmar', props.produto.id)
+  if (props.categoria) {
+    emit('confirmar', props.categoria.id)
   }
   fechar()
-}
-
-function formatarMoeda(valor?: number) {
-  return (
-    valor?.toLocaleString('pt-BR', {
-      style: 'currency',
-      currency: 'BRL',
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2
-    }) ?? 'R$ 0,00'
-  )
 }
 </script>
 
@@ -131,7 +106,7 @@ function formatarMoeda(valor?: number) {
   margin-bottom: 1rem;
 }
 
-.produto-info {
+.categoria-info {
   display: flex;
   flex-direction: column;
   gap: 0.4rem;
@@ -149,11 +124,6 @@ function formatarMoeda(valor?: number) {
 .valor {
   font-weight: 500;
   color: #222;
-}
-
-.valor-dinheiro {
-  font-weight: 600;
-  color: #27ae60;
 }
 
 .modal-footer {
@@ -191,5 +161,22 @@ function formatarMoeda(valor?: number) {
 
 .btn-remove:hover {
   background-color: #c0392b;
+}
+
+.categoria-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  margin-top: 0.5rem;
+  font-size: 1.1rem;
+  color: #222;
+}
+
+.valor-destaque {
+  font-weight: 500;
+  font-size: 1.2rem;
+  color: #e74c3c; /* Vermelho forte para destacar */
+  margin-left: 0.4rem;
+  user-select: text;
 }
 </style>

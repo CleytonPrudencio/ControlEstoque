@@ -1,5 +1,6 @@
 package br.com.estoque.controller;
 
+import br.com.estoque.model.Categoria;
 import br.com.estoque.model.Produto;
 import br.com.estoque.model.enums.TipoProduto;
 import br.com.estoque.security.SecurityTestConfig;
@@ -39,13 +40,19 @@ class ProdutoControllerTest {
 
     @Test
     void criar_deveRetornarProdutoCriado() throws Exception {
+
+        Categoria categoria = new Categoria();
+        categoria.setId(1L);
+        categoria.setNome("ELETRONICO");
+
         Produto produto = Produto.builder()
                 .id(1L)
                 .codigo("001")
                 .descricao("Produto Teste")
-                .tipoProduto(TipoProduto.ELETRONICO)
+                .categoria(categoria)
                 .valorFornecedor(new BigDecimal("10.00"))
                 .quantidadeEstoque(100)
+                .ativo(true)
                 .build();
 
         when(produtoService.salvar(any(Produto.class))).thenReturn(produto);
@@ -61,13 +68,18 @@ class ProdutoControllerTest {
 
     @Test
     void listar_deveRetornarPaginaDeProdutos() throws Exception {
+        Categoria categoria = new Categoria();
+        categoria.setId(1L);
+        categoria.setNome("ELETRONICO");
+
         Produto produto = Produto.builder()
                 .id(1L)
                 .codigo("001")
                 .descricao("Produto Teste")
-                .tipoProduto(TipoProduto.ELETRONICO)
+                .categoria(categoria)
                 .valorFornecedor(new BigDecimal("10.00"))
                 .quantidadeEstoque(100)
+                .ativo(true)
                 .build();
 
         List<Produto> lista = List.of(produto);
@@ -87,13 +99,18 @@ class ProdutoControllerTest {
 
     @Test
     void buscar_deveRetornarProduto() throws Exception {
+        Categoria categoria = new Categoria();
+        categoria.setId(1L);
+        categoria.setNome("ELETRONICO");
+
         Produto produto = Produto.builder()
                 .id(1L)
                 .codigo("001")
                 .descricao("Produto Teste")
-                .tipoProduto(TipoProduto.ELETRONICO)
+                .categoria(categoria)
                 .valorFornecedor(new BigDecimal("10.00"))
                 .quantidadeEstoque(100)
+                .ativo(true)
                 .build();
 
         when(produtoService.buscarPorId(1L)).thenReturn(produto);

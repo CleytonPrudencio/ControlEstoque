@@ -1,5 +1,6 @@
 package br.com.estoque.exception;
 
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
@@ -67,6 +68,14 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<String> handleInvalidEnum(Exception ex) {
         return ResponseEntity.badRequest().body("Categoria inválida. Use: ELETRONICO, ELETRODOMESTICO, MOVEL.");
+    }
+
+
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public ResponseEntity<ApiError> handleDataIntegrityViolation(DataIntegrityViolationException ex) {
+        String message = "Não é possível excluir a categoria porque existem produtos relacionados. Remova ou altere as categorias dos produtos antes.";
+        ApiError error = new ApiError(HttpStatus.CONFLICT.value(), message);
+        return new ResponseEntity<>(error, HttpStatus.CONFLICT);
     }
 
 }
