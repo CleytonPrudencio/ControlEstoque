@@ -5,7 +5,8 @@
         h3.modal-title Remover Produto
         button.btn-close(@click="fechar" aria-label="Fechar modal") &times;
       section.modal-body
-        p.text-confirm Você tem certeza que deseja remover o seguinte produto?
+        p.text-confirm O produto será desativado e poderá ser reativado posteriormente na opção "Reativar Produto" da Lista de Produtos.
+        p.text-confirm Tem certeza de que deseja desativar o seguinte produto?
         .produto-info
           p
             span.label Nome:

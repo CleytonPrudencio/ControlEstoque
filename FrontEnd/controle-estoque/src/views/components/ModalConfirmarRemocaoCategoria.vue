@@ -5,7 +5,8 @@
       h3.modal-title Remover Categoria
       button.btn-close(@click="fechar" aria-label="Fechar modal") &times;
     section.modal-body
-      p.text-confirm Você tem certeza que deseja remover a categoria abaixo?
+      p.text-confirm Tem certeza de que deseja remover a categoria abaixo?
+      p.text-confirm Ao removê-la, todos os produtos vinculados ficarão sem categoria associada.
       .categoria-info
         p
           span.label Nome:

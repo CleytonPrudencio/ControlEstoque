@@ -82,10 +82,18 @@ public class ProdutoService {
         }
 
         if (!Objects.equals(produtoExistente.getCategoria(), produtoAtualizado.getCategoria())) {
+            String nomeCategoriaAntes = produtoExistente.getCategoria() != null
+                    ? produtoExistente.getCategoria().getNome()
+                    : "Sem categoria";
+            String nomeCategoriaDepois = produtoAtualizado.getCategoria() != null
+                    ? produtoAtualizado.getCategoria().getNome()
+                    : "Sem categoria";
+
             descricao.append("Categoria alterada de ")
-                    .append(produtoExistente.getCategoria().getNome()).append(" para ")
-                    .append(produtoAtualizado.getCategoria().getNome()).append(". ");
+                    .append(nomeCategoriaAntes).append(" para ")
+                    .append(nomeCategoriaDepois).append(". ");
         }
+
 
         if (produtoExistente.getValorFornecedor() != null && !produtoExistente.getValorFornecedor().equals(produtoAtualizado.getValorFornecedor())) {
             descricao.append("Valor do fornecedor alterado de R$ ")
@@ -188,6 +196,24 @@ public class ProdutoService {
         }
 
         return resultado.toString().trim();
+    }
+
+    public Produto reativarProduto(Long id) {
+        Produto produto = produtoRepo.findById(id)
+                .orElseThrow(() -> new RuntimeException("Produto não encontrado"));
+
+        if (produto.isAtivo()) {
+            throw new RuntimeException("Produto já está ativo");
+        }
+
+        produto.setAtivo(true);
+        return produtoRepo.save(produto);
+    }
+
+
+    public Page<Produto> listarDesativadosComFiltro(String descricao, Long categoriaId, Pageable pageable) {
+        var spec = ProdutoSpecification.desativadosComFiltro(descricao, categoriaId);
+        return produtoRepo.findAll(spec, pageable);
     }
 
 

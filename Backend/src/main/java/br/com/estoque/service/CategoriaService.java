@@ -1,7 +1,9 @@
 package br.com.estoque.service;
 
 import br.com.estoque.model.Categoria;
+import br.com.estoque.model.Produto;
 import br.com.estoque.repository.CategoriaRepository;
+import br.com.estoque.repository.ProdutoRepository;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -10,9 +12,12 @@ import java.util.List;
 public class CategoriaService {
 
     private final CategoriaRepository repository;
+    private final ProdutoRepository produtoRepository;
 
-    public CategoriaService(CategoriaRepository repository) {
+
+    public CategoriaService(CategoriaRepository repository, ProdutoRepository produtoRepository) {
         this.repository = repository;
+        this.produtoRepository = produtoRepository;
     }
 
     public List<Categoria> listar() {
@@ -35,7 +40,13 @@ public class CategoriaService {
         if (!repository.existsById(id)) {
             throw new RuntimeException("Categoria não encontrada");
         }
+        List<Produto> produtosRelacionados = produtoRepository.findByCategoriaId(id);
+        for (Produto produto : produtosRelacionados) {
+            produto.setCategoria(null);
+        }
+        produtoRepository.saveAll(produtosRelacionados);
         repository.deleteById(id);
     }
+
 }
 

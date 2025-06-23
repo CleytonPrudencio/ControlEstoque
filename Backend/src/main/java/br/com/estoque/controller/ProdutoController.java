@@ -15,6 +15,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+// ... (importações permanecem as mesmas)
 
 @RestController
 @RequestMapping("/produtos")
@@ -63,7 +64,6 @@ public class ProdutoController {
         List<Produto> produtos = produtoService.buscarPorCategoria(nomeCategoria);
         return ResponseEntity.ok(produtos);
     }
-
 
     @Operation(summary = "Buscar produto por ID", description = "Recupera os detalhes de um produto específico pelo ID")
     @ApiResponses(value = {
@@ -123,6 +123,33 @@ public class ProdutoController {
     @GetMapping("/all")
     public Page<Produto> listarTodosPaginado(Pageable pageable) {
         return produtoService.listarTodosPaginado(pageable);
+    }
+
+    @Operation(summary = "Reativar produto", description = "Reativa um produto desativado anteriormente")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Produto reativado com sucesso"),
+            @ApiResponse(responseCode = "404", description = "Produto não encontrado"),
+            @ApiResponse(responseCode = "500", description = "Erro interno do servidor")
+    })
+    @PutMapping("/{id}/reativar")
+    public ResponseEntity<Produto> reativarProduto(@PathVariable Long id) {
+        Produto produtoReativado = produtoService.reativarProduto(id);
+        return ResponseEntity.ok(produtoReativado);
+    }
+
+    @Operation(summary = "Listar produtos desativados com filtro", description = "Lista os produtos desativados com filtros opcionais por descrição e categoria, paginados")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Lista de produtos desativados retornada com sucesso"),
+            @ApiResponse(responseCode = "400", description = "Parâmetros inválidos"),
+            @ApiResponse(responseCode = "500", description = "Erro interno do servidor")
+    })
+    @GetMapping("/desativados/all")
+    public Page<Produto> listarTodosDesativadosComFiltro(
+            @RequestParam(required = false) String descricao,
+            @RequestParam(required = false) Long categoriaId,
+            Pageable pageable
+    ) {
+        return produtoService.listarDesativadosComFiltro(descricao, categoriaId, pageable);
     }
 
 }

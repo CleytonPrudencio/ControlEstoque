@@ -82,11 +82,13 @@
         input(type="text" v-model="filtroProduto.descricao" placeholder="Filtrar por nome")
         select(v-model="filtroProduto.tipoProduto")
           option(value="") Todos os tipos
+          option(value="SEM_CATEGORIA") SEM CATEGORIA
           option(v-for="cat in categorias" :key="cat.id" :value="cat.nome") {{ cat.nome }}
         button.btn-outline(type="button" @click="limparFiltrosProduto") Limpar filtros
-        button.btn-outline-gren(@click="abrirAdicionarProduto()") Adicionar Produto +
+        button.btn-reativer(@click="abrirReativarProduto()") Reativar Produto
+        button.btn-outline-gren(@click="abrirAdicionarProduto()") Adicionar Produto + 
       table
-        thead
+        thead 
           tr
             th Código
             th Produto
@@ -105,7 +107,7 @@
             td
               strong {{ produto.codigo }}
             td {{ produto.nome }}
-            td {{ produto.categoria && produto.categoria.nome ? produto.categoria.nome : 'Sem categoria' }}
+            td {{ produto.categoria && produto.categoria.nome ? produto.categoria.nome : 'SEM CATEGORIA' }}
             td {{ produto.quantidade }}
             td(v-if="!isLoading") {{ saidasPorProduto[produto.id] || 0 }}
             td {{ formatarReais(produto.valorFornecedor.toFixed(2)) }}
@@ -154,7 +156,7 @@
             td
               strong {{ m.produto.codigo }}
             td {{ m.produto.descricao }}
-            td {{ m.produto.categoria?.nome || 'Sem categoria' }}
+            td {{ m.produto.categoria?.nome || 'SEM CATEGORIA' }}
             td(:class="{'entrada': m.tipo === 'ENTRADA','saida': m.tipo === 'SAIDA','exclusao': m.tipo === 'EXCLUSAO', 'editado': m.tipo === 'EDITADO', 'criado': m.tipo === 'CRIADO'}") {{ m.tipo }}
             td {{ m.quantidade }}
             td {{ formatarReais(m.produto.valorFornecedor) }}
@@ -214,6 +216,13 @@
     @fechar="modalMovimentacaoAberto = false"
   )
 
+  ModalReativarProdutos(
+    :visible="modalReativarAberto"
+    @close="modalReativarAberto = false"
+    @reativar="onReativarProduto"
+  )
+
+
 
 </template>
 
@@ -224,7 +233,8 @@ import {
   criarProduto,
   atualizarProduto,
   deletarProduto,
-  listarProdutosPorCategoria
+  listarProdutosPorCategoria,
+  reativarProduto
 } from '@/services/produtoService'
 import {
   listarMovimentacao,
@@ -239,7 +249,7 @@ import { listarCategorias, salvarCategoria, excluirCategoria } from '@/services/
 import { login } from '@/services/authService'
 import ModalExtrato from '@/views/components/ModalExtrato.vue'
 import ModalExtratoMovimentacao from '@/views/components/ModalExtratoMovimentacao.vue'
-
+import ModalReativarProdutos from '@/views/components/ModalReativarProdutos.vue' // ajuste caminho se necessário
 import ModalNovoCategoria from '@/views/components/ModalNovoCategoria.vue'
 import ModalProduto from '@/views/components/ModalProdutoNovo.vue'
 import ModalConfirmarRemocaoCategoria from '@/views/components/ModalConfirmarRemocaoCategoria.vue'
@@ -362,6 +372,23 @@ async function abrirModalMovimentacao(movimentacao: { id: number }) {
   }
 }
 
+const modalReativarAberto = ref(false)
+
+// Função para abrir modal
+function abrirReativarProduto() {
+  modalReativarAberto.value = true
+}
+
+async function onReativarProduto(produtoId: number) {
+  try {
+    await reativarProduto(produtoId)
+    toast.success('Produto reativado com sucesso!')
+    modalReativarAberto.value = false
+    await refreshLists()
+  } catch (error) {
+    toast.error((error as Error).message || 'Erro ao reativar produto')
+  }
+}
 const movimentacoes = ref<Movimentacao[]>([])
 const erro = ref('')
 const sucesso = ref('')
@@ -407,15 +434,17 @@ async function buscarProdutos(pagina = 0) {
   paginaProduto.value = pagina
   isLoading.value = true
   erro.value = ''
+
   try {
-    const resposta = await listarProdutos({
+    const params = {
       codigo: filtroProduto.codigo || '',
       descricao: filtroProduto.descricao || '',
       categoria: filtroProduto.tipoProduto || '',
       page: paginaProduto.value,
       size: tamanhoPagina.value,
       sort: 'descricao,asc'
-    })
+    }
+    const resposta = await listarProdutos(params)
 
     produtos.value = resposta.content.map((p: any) => ({
       id: p.id,
@@ -440,6 +469,7 @@ async function buscarProdutos(pagina = 0) {
     isLoading.value = false
   }
 }
+
 const paginaMov = ref(0)
 const totalPaginasMov = ref(1)
 
@@ -1010,6 +1040,22 @@ button[type='submit']:hover {
   background-color: #bdebbd;
 }
 
+.btn-reativer {
+  background-color: #c9c632;
+  color: #000000;
+  padding: 0.4rem 0.7rem;
+  margin-right: 0.5rem;
+  border-radius: 4px;
+  font-size: 0.9rem;
+  border: none;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.btn-reativer:hover {
+  background-color: #97af3d;
+}
+
 .produto-detalhes {
   margin-top: 0.5rem;
   background-color: #f2f2f2;
@@ -1154,7 +1200,7 @@ button[type='submit']:hover {
   }
   .btn-outline,
   .btn-outline-gren,
-  .btn-outline-red {
+  .btn-reativer .btn-outline-red {
     font-size: 0.75rem;
     padding: 0.25rem 0.5rem;
   }
