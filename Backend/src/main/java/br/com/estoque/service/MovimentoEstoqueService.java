@@ -16,6 +16,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.text.NumberFormat;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.*;
@@ -26,6 +27,7 @@ public class MovimentoEstoqueService {
 
     private final MovimentoEstoqueRepository movimentoRepo;
     private final ProdutoRepository produtoRepo;
+    NumberFormat formatoMoeda = NumberFormat.getCurrencyInstance(new Locale("pt", "BR"));
 
     @Transactional
     public MovimentoEstoque registrarMovimento(MovimentoEstoque movimento) {
@@ -37,14 +39,19 @@ public class MovimentoEstoqueService {
                 throw new NegocioException("Quantidade insuficiente em estoque");
             }
             produto.setQuantidadeEstoque(produto.getQuantidadeEstoque() - movimento.getQuantidade());
-            movimento.setDescricao("Venda de produto no valor de " + movimento.getValorVenda());
+
+            String valorFormatado = formatoMoeda.format(movimento.getValorVenda());
+            movimento.setDescricao("Venda de produto no valor de " + valorFormatado);
 
         } else if (movimento.getTipo() == TipoMovimentacao.ENTRADA) {
             produto.setQuantidadeEstoque(produto.getQuantidadeEstoque() + movimento.getQuantidade());
-            movimento.setDescricao("Entrada de produto pelo forncedor no valor de " + movimento.getProduto().getValorFornecedor());
+
+            String valorFormatado = formatoMoeda.format(movimento.getValorVenda());
+            movimento.setDescricao("Entrada de produto pelo fornecedor no valor de " + valorFormatado);
         } else {
             throw new NegocioException("Tipo de movimentação inválido");
         }
+
 
 
         produtoRepo.save(produto);

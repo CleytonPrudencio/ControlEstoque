@@ -29,7 +29,7 @@ Teleport(to="body")
           dt Estoque Atual
           dd {{ movimentacao.produto.quantidadeEstoque }}
 
-          dt Valor de Venda
+          dt {{ rotuloValor }}
           dd {{ movimentacao.valorVenda ? formatarValor(movimentacao.valorVenda) : '-' }}
 
           dt Data da Movimentação
@@ -40,7 +40,7 @@ Teleport(to="body")
 </template>
 
 <script lang="ts" setup>
-import { defineProps, defineEmits } from 'vue'
+import { defineProps, defineEmits, computed } from 'vue'
 
 interface Categoria {
   id: number
@@ -71,6 +71,10 @@ const props = defineProps<{
   movimentacao: Movimentacao
   visivel: boolean
 }>()
+
+const rotuloValor = computed(() => {
+  return props.movimentacao.tipo === 'ENTRADA' ? 'Valor de Compra' : 'Valor de Venda'
+})
 
 const emit = defineEmits(['fechar'])
 

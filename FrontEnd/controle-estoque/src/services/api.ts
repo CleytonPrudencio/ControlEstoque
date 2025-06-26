@@ -1,4 +1,5 @@
 import axios from 'axios'
+import router from '@/router'
 
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL,
@@ -7,6 +8,19 @@ const api = axios.create({
   }
 })
 
+// Interceptor para adicionar token atualizado em cada requisição
+api.interceptors.request.use((config) => {
+  const token = localStorage.getItem('authToken')
+  console.log('Interceptando:', config.url, 'Token:', token)
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`
+  } else {
+    delete config.headers.Authorization
+  }
+  return config
+})
+
+// Interceptor para tratar erro 401 e redirecionar ao login
 api.interceptors.response.use(
   (response) => response,
   (error) => {
@@ -14,14 +28,10 @@ api.interceptors.response.use(
       localStorage.clear()
       sessionStorage.clear()
       delete api.defaults.headers['Authorization']
+      router.push({ name: 'Login' })
     }
     return Promise.reject(error)
   }
 )
-
-const token = localStorage.getItem('authToken')
-if (token) {
-  api.defaults.headers['Authorization'] = `Bearer ${token}`
-}
 
 export default api

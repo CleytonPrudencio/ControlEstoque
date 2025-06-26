@@ -1,31 +1,33 @@
 <template lang="pug">
-  .main-container
-    h1 Painel de Controle de Estoque
+.main-container
+  h1 Painel de Controle de Estoque
+
+  .secao-container
     .card
       h2 Entrada / Saída de Produto
 
       form(@submit.prevent="registrarMovimentacao")
         .form-row.centralizado
+          .flex-1.categoria-wrapper
+            .categoria-top
+              h3.titulo-categoria Categoria
+              .botoes-categoria
+                button.btn-adicionar(type="button" @click="abrirModalCategoria") + Adicionar Categoria
+                button.btn-excluir(type="button" @click="abrirModalExcluirCategoria") Excluir Categoria
 
-        .flex-1.categoria-com-detalhes
-          .header-categoria
-            h3.titulo-categoria Categoria
-            .botoes-categoria
-              button.btn-adicionar(type="button" @click="abrirModalCategoria") + Adicionar Categoria
-              button.btn-excluir(type="button" @click="abrirModalExcluirCategoria") Excluir Categoria
+            select#categoria(v-model="categoriaFormulario" required)
+              option(value="" disabled selected) Selecione a categoria
+              option(v-for="cat in categorias" :key="cat.id" :value="cat.id") {{ cat.nome }}
 
-          select#categoria(v-model="categoriaFormulario" required)
-            option(value="" disabled selected) Selecione a categoria
-            option(v-for="cat in categorias" :key="cat.id" :value="cat.id") {{ cat.nome }}
-
-          .flex-1.produto-com-detalhes
+          .flex-1.produto-wrapper
             label(for="produto") Produto
             select(v-model.number="idProdutoDetalheSelecionado" @change="onSelecionarProduto")
               option(value="") Selecione um produto
               option(v-for="produto in produtosFormulario" :key="produto.id" :value="produto.id") {{ produto.nome }}
+
             .mensagem-sem-produto(v-if="categoriaFormulario && produtosFormulario.length === 0")
-                p.texto-aviso Nenhum produto encontrado para esta categoria.
-                button.btn-adicionar-produto(type="button" @click="abrirAdicionarProduto") + Adicionar Produto
+              p.texto-aviso Nenhum produto encontrado para esta categoria.
+              button.btn-adicionar-produto(type="button" @click="abrirAdicionarProduto") + Adicionar Produto
 
             .produto-detalhes(v-if="produtoParaDetalhe")
               small Código: {{ produtoParaDetalhe.codigo || '-' }}
@@ -75,6 +77,8 @@
         p.alert(v-if="erro") {{ erro }}
         p.success(v-if="sucesso") {{ sucesso }}
 
+
+  .secao-container
     .card
       h2 Lista de Produtos
       .filtros-produtos
@@ -113,13 +117,15 @@
             td {{ formatarReais(produto.valorFornecedor.toFixed(2)) }}
             td
               button.btn-outline(@click.stop="abrirEditar(produto)") Editar
-              button.btn-outline-red(@click.stop="abrirConfirmarRemocao(produto)") Apagar
+              button.btn-outline-red(@click.stop="abrirConfirmarRemocao(produto)") Desativar
 
       .pagination
         button(:disabled="paginaProduto === 0" @click="buscarProdutos(paginaProduto - 1)") Anterior
         span Página {{ paginaProduto + 1 }} de {{ totalPaginasProduto }}
         button(:disabled="paginaProduto + 1 >= totalPaginasProduto" @click="buscarProdutos(paginaProduto + 1)") Próximo
 
+
+  .secao-container
     .card
       h2 Histórico de Movimentações
       .filtros-movimentacoes
@@ -163,11 +169,13 @@
             td {{ m.valorVenda ? formatarReais(m.valorVenda) : '—' }}
             td {{ calcularLucro(m) }}
             td {{ m.dataVenda ? new Date(m.dataVenda).toLocaleDateString('pt-BR') : '—' }}
+
       .pagination
         button(:disabled="paginaMov === 0" @click="buscarMovimentacoes(paginaMov - 1)") Anterior
         span Página {{ paginaMov + 1 }} de {{ totalPaginasMov }}
         button(:disabled="paginaMov + 1 >= totalPaginasMov" @click="buscarMovimentacoes(paginaMov + 1)") Próximo
 
+  // Modals (sem alteração)
   ModalEditarProduto(
     v-if="modalEditarAberto"
     :produto="produtoSelecionado"
@@ -189,6 +197,7 @@
     :categorias="categorias"
     @close="modalAberto = false"
     @salvar="salvarProduto"
+    @criar-categoria="adicionarCategoria"
   )
 
   ModalExtrato(
@@ -196,6 +205,7 @@
     :extrato="extratoProduto"
     @close="modalExtratoAberto = false"
   )
+
   ModalNovoCategoria(
     v-if="modalNovaCategoriaAberto" 
     @close="modalNovaCategoriaAberto = false" 
@@ -221,8 +231,6 @@
     @close="modalReativarAberto = false"
     @reativar="onReativarProduto"
   )
-
-
 
 </template>
 
@@ -392,7 +400,7 @@ async function onReativarProduto(produtoId: number) {
 const movimentacoes = ref<Movimentacao[]>([])
 const erro = ref('')
 const sucesso = ref('')
-const saidasPorProduto = ref<Record<string, number>>({})
+const saidasPorProduto = reactive<Record<number, number>>({})
 
 const produtoSelecionado = ref<Produto | null>(null)
 const idProdutoDetalheSelecionado = ref<number | null>(null)
@@ -590,10 +598,11 @@ onMounted(async () => {
   isLoading.value = true
   erro.value = ''
   sucesso.value = ''
+
   try {
     const resultado = await listarResumoSaidas()
-    saidasPorProduto.value = resultado
-    await login('admin', 'admin123')
+    Object.assign(saidasPorProduto, resultado)
+
     await carregarCategorias()
     await buscarProdutos()
     await buscarMovimentacoes()
@@ -660,6 +669,8 @@ async function registrarMovimentacao() {
     }
     produto.quantidade -= movimento.value.quantidade
     produto.saidas = (produto.saidas || 0) + movimento.value.quantidade
+
+    saidasPorProduto[produto.id] = (saidasPorProduto[produto.id] || 0) + movimento.value.quantidade
   }
 
   const movimentacaoParaEnviar = {
@@ -835,7 +846,6 @@ onMounted(async () => {
   erro.value = ''
   sucesso.value = ''
   try {
-    await login('admin', 'admin123')
     await carregarCategorias()
     await buscarProdutos()
     await buscarMovimentacoes()
@@ -881,14 +891,14 @@ form {
 }
 
 .main-container {
-  max-width: 1500px;
-  margin: 2rem auto;
-  padding: 2rem;
-  background-color: #f0f0f0; /* fundo cinza claro */
-  border: 1px solid #ccc; /* borda cinza clara */
-  border-radius: 12px; /* borda arredondada */
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05); /* leve sombra */
-  color: #000;
+  flex: 1;
+  height: calc(100vh - 70px); /* 70px é a altura do header */
+  background-color: #ffffff; /* fundo limpo */
+  padding: 0;
+  margin: 0;
+  max-width: 100%;
+  width: 100%;
+  overflow-y: auto;
 }
 
 .card {
@@ -1425,5 +1435,45 @@ table td {
   display: flex;
   gap: 0.5rem;
   align-items: center;
+}
+
+.secao-container {
+  background: #fff;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  padding: 1.5rem;
+  margin-bottom: 2rem;
+  box-shadow: 0 2px 4px rgb(0 0 0 / 0.05);
+}
+
+.categoria-wrapper,
+.produto-wrapper {
+  display: flex;
+  flex-direction: column;
+}
+
+.categoria-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.botoes-categoria button {
+  margin-left: 0.5rem;
+}
+
+/* Se quiser, pode limitar largura para ficar proporcional */
+.flex-1 {
+  flex: 1;
+  min-width: 280px; /* para não ficar muito estreito */
+  margin-right: 1rem;
+}
+
+/* Para form-row centralizado ajustar espaçamento */
+.form-row.centralizado {
+  display: flex;
+  gap: 1.5rem;
+  flex-wrap: wrap;
 }
 </style>

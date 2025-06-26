@@ -4,7 +4,8 @@
   width: 100vw; /* ocupa toda a largura da tela */
   height: 100vh; /* ocupa toda a altura da tela */
   margin: 0; /* remove margens */
-  padding: 2rem; /* mantém padding */
+  padding-left: 0px;
+  padding-right: 0px;
   font-weight: normal;
   box-sizing: border-box; /* para garantir que padding não aumente o tamanho total */
 }
@@ -31,6 +32,7 @@ a,
 
   #app {
     grid-template-columns: 1fr 1fr;
-    padding: 0 2rem;
+    padding-left: 0px;
+    padding-right: 0px;
   }
 }

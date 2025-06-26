@@ -2,7 +2,7 @@
   .modal-backdrop(@click.self="fechar")
     .modal-container(role="dialog" aria-modal="true" tabindex="-1" ref="modal")
       header.modal-header
-        h3.modal-title Remover Produto
+        h3.modal-title Desativar Produto
         button.btn-close(@click="fechar" aria-label="Fechar modal") &times;
       section.modal-body
         p.text-confirm O produto será desativado e poderá ser reativado posteriormente na opção "Reativar Produto" da Lista de Produtos.
@@ -25,7 +25,7 @@
             span.valor {{ produto?.quantidade }}
       footer.modal-footer
         button.btn-cancel(@click="fechar") Cancelar
-        button.btn-remove(@click="confirmarRemocao") Remover
+        button.btn-remove(@click="confirmarRemocao") Desativar
   </template>
 
 <script setup lang="ts">

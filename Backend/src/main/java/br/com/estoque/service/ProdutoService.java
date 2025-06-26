@@ -145,6 +145,7 @@ public class ProdutoService {
         movimentacaoExclusao.setTipo(TipoMovimentacao.EXCLUSAO);
         movimentacaoExclusao.setQuantidade(produto.getQuantidadeEstoque());
         movimentacaoExclusao.setDataVenda(LocalDateTime.now());
+        movimentacaoExclusao.setDescricao("Produto (" + produto.getCodigo() + ") - " + produto.getDescricao() + " foi desativado.");
         movimentacaoExclusao.setValorVenda(null);
 
         movimentoRepo.save(movimentacaoExclusao);

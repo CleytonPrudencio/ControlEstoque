@@ -26,10 +26,12 @@
           input(
             type="text"
             v-model="valorDigitado"
+            @input="aoDigitarValorFornecedor"
             @blur="aoSairCampoValor"
             @focus="aoEntrarCampoValor"
             required
           )
+          div.valor-formatado-baixo {{ formatarMoeda(parseMoeda(valorDigitado)) }}
 
           label Quantidade
           input(type="number" v-model.number="produtoEditado.quantidadeEstoque" min="0" required)
@@ -47,20 +49,22 @@
   </template>
 
 <script setup lang="ts">
-import { defineEmits, defineProps, reactive, ref, watch, onMounted, computed } from 'vue'
+import { defineEmits, defineProps, reactive, ref, watch, onMounted } from 'vue'
 import { pegarNovoCodigo } from '@/services/produtoService'
 import type { Categoria } from '@/services/categoriaService'
 import ModalNovaCategoria from '@/views/components/ModalNovoCategoria.vue'
 import { useToast } from 'vue-toastification'
+
 const toast = useToast()
 
 interface Produto {
   codigo: string
   descricao: string
-  categoria: Categoria // <- aqui, e não tipoProduto
+  categoria: Categoria
   quantidadeEstoque: number
   valorFornecedor: number
 }
+
 const modalNovaCategoriaAberto = ref(false)
 
 function abrirModalNovaCategoria() {
@@ -69,11 +73,13 @@ function abrirModalNovaCategoria() {
 function fecharModalNovaCategoria() {
   modalNovaCategoriaAberto.value = false
 }
+
 const isNovoProduto = ref(false)
 
 const emit = defineEmits<{
   (e: 'close'): void
   (e: 'salvar', produto: Produto): void
+  (e: 'criar-categoria', nome: string): void
 }>()
 
 const props = defineProps<{
@@ -84,17 +90,26 @@ const props = defineProps<{
 const produtoEditado = reactive<Produto>({
   codigo: '',
   descricao: '',
-  categoria: props.categorias[0] || { id: 0, nome: '' }, // seleciona a primeira ou um default
+  categoria: props.categorias[0] || { id: 0, nome: '' },
   quantidadeEstoque: 0,
   valorFornecedor: 0
 })
 
 const valorDigitado = ref('')
 
-onMounted(() => {
-  valorDigitado.value = formatarMoeda(produtoEditado.valorFornecedor)
+onMounted(async () => {
+  if (props.produto) {
+    Object.assign(produtoEditado, props.produto)
+    valorDigitado.value = formatarMoeda(produtoEditado.valorFornecedor)
+    isNovoProduto.value = false
+  } else {
+    isNovoProduto.value = true
+    produtoEditado.codigo = await pegarNovoCodigo()
+    valorDigitado.value = formatarMoeda(0)
+  }
 })
 
+// Atualiza valorDigitado sempre que valorFornecedor mudar
 watch(
   () => produtoEditado.valorFornecedor,
   (novo) => {
@@ -103,7 +118,9 @@ watch(
 )
 
 function aoEntrarCampoValor() {
-  valorDigitado.value = produtoEditado.valorFornecedor.toString().replace('.', ',')
+  valorDigitado.value = produtoEditado.valorFornecedor
+    ? produtoEditado.valorFornecedor.toFixed(2).replace('.', ',')
+    : ''
 }
 
 function aoSairCampoValor() {
@@ -112,50 +129,11 @@ function aoSairCampoValor() {
   valorDigitado.value = formatarMoeda(valorNumerico)
 }
 
-const valorFornecedorFormatado = computed({
-  get() {
-    return formatarMoeda(produtoEditado.valorFornecedor)
-  },
-  set(valor: string) {
-    produtoEditado.valorFornecedor = parseMoeda(valor)
-  }
-})
-onMounted(async () => {
-  if (props.produto) {
-    Object.assign(produtoEditado, props.produto)
-    atualizarFormatacoes()
-    isNovoProduto.value = false
-  } else {
-    isNovoProduto.value = true
-    produtoEditado.codigo = await pegarNovoCodigo()
-  }
-})
-
-watch(
-  () => props.produto,
-  async (novo) => {
-    if (novo) {
-      Object.assign(produtoEditado, novo)
-      atualizarFormatacoes()
-      isNovoProduto.value = false
-    } else {
-      isNovoProduto.value = true
-      produtoEditado.codigo = await pegarNovoCodigo()
-    }
-  },
-  { immediate: true }
-)
-
-watch(
-  () => produtoEditado.valorFornecedor,
-  () => {
-    valorFornecedorFormatado.value = formatarMoeda(produtoEditado.valorFornecedor)
-  }
-)
-
-function atualizarFormatacoes() {
-  valorFornecedorFormatado.value = formatarMoeda(produtoEditado.valorFornecedor)
+function aoDigitarValorFornecedor(event: Event) {
+  const alvo = event.target as HTMLInputElement
+  valorDigitado.value = alvo.value
 }
+
 function parseMoeda(valor: string): number {
   const limpo = valor.replace(/[^\d,]/g, '').replace(',', '.')
   return parseFloat(limpo) || 0
@@ -169,15 +147,10 @@ function formatarMoeda(valor: number): string {
   }).format(valor)
 }
 
-function aoDigitarValorFornecedor(event: Event) {
-  const alvo = event.target as HTMLInputElement
-  produtoEditado.valorFornecedor = parseMoeda(alvo.value)
-  valorFornecedorFormatado.value = formatarMoeda(produtoEditado.valorFornecedor)
-}
-
 function fechar() {
   emit('close')
 }
+
 function categoriaCriada(nome: string) {
   const jaExiste = props.categorias.some((cat) => cat.nome.toLowerCase() === nome.toLowerCase())
   if (jaExiste) {
@@ -185,14 +158,7 @@ function categoriaCriada(nome: string) {
     return
   }
 
-  const novaCategoria = {
-    id: Date.now(), // ou ID retornado da API
-    nome
-  }
-
-  props.categorias.push(novaCategoria)
-  produtoEditado.categoria = novaCategoria
-  toast.success('Categoria criada com sucesso!')
+  emit('criar-categoria', nome)
 }
 
 function salvar() {
@@ -200,6 +166,7 @@ function salvar() {
   fechar()
 }
 </script>
+
 <style scoped>
 .modal-backdrop {
   position: fixed;
@@ -344,5 +311,11 @@ input[v-model='produtoEditado.valorVenda'] {
 .link-adicionar-categoria:hover {
   text-decoration: none;
   color: #218838;
+}
+.valor-formatado-baixo {
+  font-size: 0.9rem;
+  color: #666;
+  margin-top: 4px;
+  user-select: none;
 }
 </style>
