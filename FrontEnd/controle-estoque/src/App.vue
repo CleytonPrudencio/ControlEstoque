@@ -27,7 +27,7 @@ header.main-header
     router-link(:to="{ name: 'Estoque' }") Estoque
     router-link(:to="{ name: 'CadastroUsuario' }") Cadastro de Usuario
     router-link(:to="{ name: 'CadastroCliente' }") Cadastro de Clientes
-    router-link(:to="{ name: 'CadastroVeiculo' }") Cadastro de Veiculos
+    router-link(:to="{ name: 'CadastroVeiculo' }") Cadastro de Usuario
 
   .login-wrapper
     button.btn-login(v-if="!isLoggedIn" @click="goToLogin") Login
