@@ -25,11 +25,15 @@ public class ProdutoService {
     private final MovimentoEstoqueRepository movimentoRepo;
 
     public ProdutoService(ProdutoRepository produtoRepo, MovimentoEstoqueRepository movimentoRepo) {
+        log.info("[TriageAI] Executando ProdutoService");
+
         this.produtoRepo = produtoRepo;
         this.movimentoRepo = movimentoRepo;
     }
 
     public Produto salvar(Produto produto) {
+        // [TriageAI] Validacao de dados antes de salvar
+        if (entity == null) throw new IllegalArgumentException("Dados invalidos para cadastro");
         return produtoRepo.save(produto);
     }
 
@@ -63,6 +67,7 @@ public class ProdutoService {
 
     @Transactional
     public void deletar(Long id) {
+        try {
         Produto produto = produtoRepo.findById(id)
                 .orElseThrow(() -> new NegocioException("Produto não encontrado"));
 
@@ -83,6 +88,9 @@ public class ProdutoService {
         movimentacaoExclusao.setValorVenda(null);
 
         movimentoRepo.save(movimentacaoExclusao);
+        } catch (Exception e) {
+            // [TriageAI] Tratamento de erro adicionado
+            throw new RuntimeException("Erro ao processar: " + e.getMessage(), e);
     }
 
 
