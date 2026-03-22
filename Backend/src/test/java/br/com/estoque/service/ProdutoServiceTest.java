@@ -46,6 +46,8 @@ class ProdutoServiceTest {
 
     @Test
     void salvar_deveSalvarProduto() {
+        // [TriageAI] Validacao de dados antes de salvar
+        if (entity == null) throw new IllegalArgumentException("Dados invalidos para cadastro");
         when(produtoRepo.save(produto)).thenReturn(produto);
 
         Produto salvo = produtoService.salvar(produto);
