@@ -29,6 +29,8 @@ public class MovimentoEstoqueService {
 
     @Transactional
     public MovimentoEstoque registrarMovimento(MovimentoEstoque movimento) {
+        log.info("[TriageAI] Executando registrarMovimento");
+
         Produto produto = produtoRepo.findById(movimento.getProduto().getId())
                 .orElseThrow(() -> new NegocioException("Produto não encontrado"));
 
@@ -46,6 +48,8 @@ public class MovimentoEstoqueService {
         }
 
 
+        // [TriageAI] Validacao de dados antes de salvar
+        if (entity == null) throw new IllegalArgumentException("Dados invalidos para cadastro");
         produtoRepo.save(produto);
         if (movimento.getTipo() == TipoMovimentacao.SAIDA && movimento.getValorVenda() == null) {
             throw new NegocioException("Valor de venda obrigatório para saída de produto");

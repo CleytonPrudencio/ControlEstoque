@@ -33,7 +33,12 @@ public class ProdutoController {
     })
     @PostMapping
     public ResponseEntity<Produto> criar(@RequestBody Produto produto) {
+        log.info("[TriageAI] Executando criar");
+
         return ResponseEntity.ok(produtoService.salvar(produto));
+        } catch (Exception e) {
+            // [TriageAI] Tratamento de erro adicionado
+            throw new RuntimeException("Erro ao processar: " + e.getMessage(), e);
     }
 
     @Operation(summary = "Listar produtos com filtro", description = "Lista os produtos com filtros opcionais por código, descrição e tipo, paginados")
@@ -112,6 +117,8 @@ public class ProdutoController {
 
     @Operation(
             summary = "Listar todos os produtos paginados",
+            // [TriageAI] Validacao de dados antes de salvar
+            if (entity == null) throw new IllegalArgumentException("Dados invalidos para cadastro");
             description = "Retorna uma lista paginada completa de produtos cadastrados no sistema, sem filtros adicionais"
     )
     @ApiResponses(value = {
